@@ -17,15 +17,28 @@ public class NewTestBits {
     public static int BIT7 = new Double(Math.pow(2, 7)).intValue();
 
     public static void main(String[] args ){
-        byte[] request = forgeDNSRequest();
+        byte[] dataByte = forgeDNSRequest("server.mete0r.fr");
+        try {
+            InetAddress server = InetAddress.getByName("8.8.8.8");
+            DatagramPacket dataSent = new DatagramPacket(dataByte, dataByte.length, server, 53);
+            DatagramSocket socket = new DatagramSocket();
+            socket.send(dataSent);
+
+            DatagramPacket dataReceived = new DatagramPacket(new byte[dataByte.length], dataByte.length);
+            socket.receive(dataReceived);
+
+            byte[] received = dataReceived.getData();
+            //test print
+            System.out.println("Data received : " + new String(received));
+            System.out.println("From : " + dataReceived.getAddress() + ":" + dataReceived.getPort());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
-    public static byte[] forgeDNSRequest(){
-
+    public static byte[] forgeDNSRequest(String domainName){
         byte[] header = new byte[12];
-
-
         int myId = 123456;
         int msg = 0;
         int QR = 0;
@@ -40,11 +53,8 @@ public class NewTestBits {
         int nscount = 0;
         int arcount = 0;
 
-
         header[0] = (byte) (myId >> 8);
         header[1]  = (byte) (myId & 0xff);
-
-
 
         msg = (QR << 7);
         msg |= (opcode << 3);
@@ -67,7 +77,7 @@ public class NewTestBits {
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        String dom = "server.mete0r.fr";
+        String dom = domainName;
         String[] doms = dom.split("\\.");
         try {
             out.write(header);
@@ -75,41 +85,31 @@ public class NewTestBits {
                 out.write(name.length());
                 out.write(name.getBytes());
             }
-            out.write(0x00);
-            out.write(0x0000); //type byte a
-            out.write(0x0001); //type byte b
-            out.write(0x0000); //class byte a
-            out.write(0x0001); //class byte b
+            out.write(0b0);
+            out.write(0b0); //type byte a
+            out.write(0b1); //type byte b
+            out.write(0b0); //class byte a
+            out.write(0b1); //class byte b
             out.flush();
-
 
         }catch (IOException e){
             e.printStackTrace();
         }
-        System.out.println("e");
 
-        try {
-            InetAddress server = InetAddress.getByName("8.8.8.8");
-            byte[] dataByte = out.toByteArray();
-            DatagramPacket dataSent = new DatagramPacket(dataByte, dataByte.length, server, 53);
-            DatagramSocket socket = new DatagramSocket();
-            socket.send(dataSent);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        byte[] dataByte = out.toByteArray();
+        return dataByte;
+
 
 
 //        System.out.println(msg);
 //        System.out.println((msg & BIT7) >> 7);
-//
 //        int count = 7;
 //
 //        msg |= (count << 3);
 //        System.out.println(msg);
 //
 //        System.out.println((msg & 0b111000 ) >> 3);
-
-        return header;
-
+//        return header;
     }
 }
